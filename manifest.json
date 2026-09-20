@@ -1,0 +1,16 @@
+{
+  "name": "Amazon PPC 關鍵字廣告建議工具",
+  "short_name": "PPC廣告建議",
+  "description": "依售價/目標ACOS/轉換率計算建議出價，關鍵字自動分類為精準/詞組/廣泛廣告活動",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0d0b1a",
+  "theme_color": "#7c5cff",
+  "lang": "zh-TW",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

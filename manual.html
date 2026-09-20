@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>操作手冊 - Amazon PPC 關鍵字廣告建議工具</title>
+<style>
+  body{font-family:"Segoe UI","Microsoft JhengHei",sans-serif;max-width:800px;margin:0 auto;padding:30px 20px;line-height:1.8;background:#0d0b1a;color:#e9e7f5;}
+  h1{color:#7c5cff;}
+  h2{color:#7c5cff;border-bottom:1px solid #2c2650;padding-bottom:6px;margin-top:36px;}
+  code{background:#1e1a35;padding:2px 6px;border-radius:4px;}
+  .warn{background:rgba(124,92,255,.14);border-left:4px solid #7c5cff;padding:10px 14px;border-radius:6px;}
+  a{color:#7c5cff;}
+  table{width:100%;border-collapse:collapse;margin:12px 0;}
+  th,td{padding:8px 10px;border-bottom:1px solid #2c2650;text-align:left;font-size:14px;}
+</style>
+</head>
+<body>
+<h1>Amazon PPC 關鍵字廣告建議工具 — 操作手冊</h1>
+
+<h2>這是做什麼的？</h2>
+<p>輸入商品售價、目標 ACOS（廣告花費佔銷售額比例）與預估轉換率，算出每個關鍵字的建議出價區間，並自動把關鍵字分類成「精準比對／詞組比對／廣泛比對」三種 Amazon 廣告活動類型，同時抓出潛在的否定關鍵字候選。<strong>出價數字全部由公式計算，不需要 API 金鑰即可完整使用。</strong></p>
+
+<h2>可以直接匯入「跨境電商關鍵字文字雲產生器」的匯出檔</h2>
+<p>如果你已經用過 <code>product-keyword-cloud</code> 產生過關鍵字並下載 CSV，可以直接在「上傳 CSV」分頁選擇該檔案，本工具會自動比對「關鍵字(英)/關鍵字(中)/熱度/分類」欄位，不需要重新輸入。分類欄位（短尾核心詞/長尾詞/場景詞/痛點詞）會直接影響比對類型的判斷。</p>
+
+<h2>出價公式怎麼算的？</h2>
+<p><strong>最高可接受出價（Max CPC）＝ 售價 × 目標ACOS% × 預估轉換率%</strong>，這是業界常用的估算法：如果廣告帶來一次銷售的成本超過這個數字，你的整體 ACOS 就會超出目標。</p>
+<p>接著依每個關鍵字的「熱度分」（1-100，代表競爭度/搜尋量的參考指標）分成三級，在 Max CPC 基礎上給出建議出價區間：</p>
+<table>
+  <tr><th>競爭度</th><th>熱度範圍</th><th>建議出價倍率</th></tr>
+  <tr><td>高競爭</td><td>≥70</td><td>Max CPC × 0.9 ~ 1.15（積極搶量）</td></tr>
+  <tr><td>中競爭</td><td>40-69</td><td>Max CPC × 0.7 ~ 0.95</td></tr>
+  <tr><td>低競爭</td><td>&lt;40</td><td>Max CPC × 0.5 ~ 0.75（低出價取得曝光）</td></tr>
+</table>
+
+<h2>比對類型怎麼分的？</h2>
+<p>若關鍵字帶有「跨境電商關鍵字文字雲產生器」的分類標籤：長尾詞/痛點詞 → 精準比對；場景詞 → 詞組比對；短尾核心詞 → 廣泛比對。若沒有分類標籤，改用字數判斷（英文以空白分字、中文以字數概估）：字數越多（越具體）越傾向精準比對，字數越少（越廣泛）越傾向廣泛比對。</p>
+
+<h2>否定關鍵字候選是怎麼抓的？</h2>
+<p>規則式偵測關鍵字裡是否包含「免費、二手、維修、教學、DIY、租借、仿冒」等與付費購買意圖不符的字眼，抓到就標記為潛在否定關鍵字候選，建議加進廣告活動的否定關鍵字清單，避免花錢買到不會轉換的流量。這只是粗略規則，請自行判斷是否要真的排除。</p>
+
+<h2>AI 策略建議是做什麼的？</h2>
+<p>選填功能，需要你自己的 API 金鑰。AI 只會補充文字策略建議（例如新品期廣泛策略、成熟期收斂到精準比對的時機），<strong>不會、也不應該重新產生任何出價數字</strong>——所有金額都已經由前端公式算好，AI 不清楚你的實際帳戶數據，不該替你報價。</p>
+
+<h2>免責提醒</h2>
+<div class="warn">本工具的出價建議、熱度分數皆為估算輔助，不是 Amazon Ads 官方數據。實際投放前請務必在 <a href="https://advertising.amazon.com/" target="_blank">Amazon Advertising</a> 後台核對真實競價與流量數據，並持續依實際成效調整出價。</div>
+
+<h2>製作者</h2>
+<p>Mark Tsai（蔡豐全）｜<a href="mailto:tsaimark@gmail.com">tsaimark@gmail.com</a></p>
+
+</body>
+</html>

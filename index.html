@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Amazon PPC 關鍵字廣告建議工具</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#7c5cff">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="PPC廣告建議">
+<style>
+:root{
+  --bg:#0d0b1a; --panel:#161328; --panel2:#1e1a35; --border:#2c2650;
+  --accent:#7c5cff; --accent-dark:#5f3fe0; --text:#e9e7f5; --sub:#9d97c2;
+  --ok:#3ecf8e; --warn:#f5a623; --bad:#ff5c5c;
+  --exact:#3ecf8e; --phrase:#4a9fd6; --broad:#f5a623;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI","Microsoft JhengHei",sans-serif;}
+
+#marqueeBar{position:fixed;top:0;left:0;right:0;height:30px;background:#000;border-bottom:1px solid var(--border);z-index:2100;overflow:hidden;display:none;align-items:center;}
+#marqueeBar.show{display:flex;}
+#marqueeTrack{display:inline-block;white-space:nowrap;padding-left:100%;font-size:13px;font-weight:600;color:var(--accent);animation:marquee-scroll 30s linear infinite;}
+body.has-marquee{padding-top:30px;}
+body.has-marquee header{top:30px;}
+@keyframes marquee-scroll{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+
+header{background:linear-gradient(90deg,#151030,#241c4a);padding:20px 24px;border-bottom:3px solid var(--accent);position:sticky;top:0;z-index:20;}
+header h1{margin:0;font-size:22px;}
+header h1 span{color:var(--accent);}
+header p{margin:4px 0 0;color:var(--sub);font-size:13px;}
+
+.toplinks{display:flex;justify-content:flex-end;gap:10px;padding:10px 24px 0;}
+.wrap{max-width:1200px;margin:0 auto;padding:24px;}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:20px 22px;margin-bottom:20px;}
+.panel h2{margin:0 0 16px;font-size:16px;color:var(--accent);border-bottom:1px solid var(--border);padding-bottom:8px;}
+.panel h3{font-size:14px;color:var(--text);margin:18px 0 8px;}
+
+label{display:block;font-size:13px;color:var(--sub);margin:12px 0 4px;}
+select,textarea,input[type=text],input[type=number]{width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:9px 10px;font-size:14px;font-family:inherit;}
+textarea{min-height:120px;resize:vertical;font-family:Consolas,monospace;font-size:13px;}
+.field-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+@media (max-width:900px){.field-grid{grid-template-columns:repeat(2,1fr);}}
+@media (max-width:560px){.field-grid{grid-template-columns:1fr;}}
+.hint{font-size:12px;color:var(--sub);margin-top:6px;line-height:1.6;}
+
+.tabs{display:flex;gap:8px;margin-bottom:10px;}
+.tabs button{flex:none;}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+
+button{cursor:pointer;border:none;border-radius:6px;font-weight:600;font-size:14px;padding:10px 16px;}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary:hover{background:var(--accent-dark);}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text);}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent);}
+.btn-sm{padding:6px 10px;font-size:12px;}
+.btn-ghost.active{border-color:var(--accent);color:var(--accent);background:rgba(124,92,255,.12);}
+.examples{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
+.actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;}
+
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+@media (max-width:900px){.kpi-row{grid-template-columns:repeat(2,1fr);}}
+.kpi-card{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;}
+.kpi-card .kpi-label{font-size:12px;color:var(--sub);}
+.kpi-card .kpi-value{font-size:22px;font-weight:700;margin-top:4px;}
+.kpi-card .kpi-sub{font-size:11px;color:var(--sub);margin-top:2px;}
+
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th,td{padding:8px 10px;border-bottom:1px solid var(--border);text-align:left;}
+th{color:var(--sub);font-weight:600;font-size:12px;}
+td.num{font-family:Consolas,monospace;text-align:right;}
+.match-badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;color:#0b0d16;}
+.match-badge.exact{background:var(--exact);}
+.match-badge.phrase{background:var(--phrase);}
+.match-badge.broad{background:var(--broad);}
+.neg-flag{color:var(--bad);font-size:11px;}
+.campaign-block{margin-bottom:22px;}
+.campaign-head{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.campaign-head .dot{width:10px;height:10px;border-radius:50%;}
+.campaign-head .dot.exact{background:var(--exact);}
+.campaign-head .dot.phrase{background:var(--phrase);}
+.campaign-head .dot.broad{background:var(--broad);}
+.table-wrap{overflow-x:auto;}
+
+.output-box{white-space:pre-wrap;background:var(--panel2);border:1px solid var(--border);border-radius:6px;padding:12px;font-size:14px;line-height:1.7;min-height:80px;}
+.warn-box{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:16px 18px;font-size:12.5px;color:var(--sub);}
+.warn-box strong{color:var(--text);display:block;margin-bottom:8px;font-size:13px;}
+.warn-box ul{margin:0;padding-left:18px;line-height:1.8;}
+.creator-box{font-size:12.5px;color:var(--sub);text-align:center;}
+.creator-box a{color:var(--sub);}
+.footer-meta{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--sub);}
+.footer-link-btn{background:none;border:none;color:var(--sub);cursor:pointer;font-size:12px;font-family:inherit;padding:0;}
+.footer-link-btn:hover{color:var(--accent);}
+footer{max-width:900px;margin:0 auto;padding:20px 20px 60px;display:flex;flex-direction:column;gap:16px;}
+
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;align-items:center;justify-content:center;}
+.modal{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:20px;width:400px;max-width:90vw;}
+.toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);background:var(--panel2);border:1px solid var(--accent);color:var(--text);padding:10px 18px;border-radius:8px;font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:3000;}
+.toast.show{opacity:1;transform:translate(-50%,0);}
+</style>
+</head>
+<body>
+
+<div id="marqueeBar"><div id="marqueeTrack"></div></div>
+
+<header>
+  <h1>Amazon <span>PPC 關鍵字廣告</span> 建議工具</h1>
+  <p>輸入商品價格與目標 ACOS，把關鍵字清單自動分成精準／詞組／廣泛三種廣告活動，並算出建議出價區間</p>
+</header>
+
+<div class="toplinks">
+  <button class="btn-ghost btn-sm" onclick="window.open('manual.html','_blank')">📖 操作手冊</button>
+  <button class="btn-ghost btn-sm" onclick="openSettings()">🔑 API 金鑰設定（選用）</button>
+</div>
+
+<div class="wrap">
+
+  <div class="panel">
+    <h2>1. 商品與廣告活動設定</h2>
+    <div class="field-grid">
+      <div>
+        <label>商品名稱（選填）</label>
+        <input type="text" id="productName" placeholder="例：USB-C 快充行動電源">
+      </div>
+      <div>
+        <label>商品售價（USD）</label>
+        <input type="number" id="price" value="29.99" min="0" step="0.01">
+      </div>
+      <div>
+        <label>目標 ACOS（%）</label>
+        <input type="number" id="targetAcos" value="30" min="1" max="100" step="1">
+      </div>
+      <div>
+        <label>預估轉換率（%）</label>
+        <input type="number" id="convRate" value="10" min="0.1" max="100" step="0.1">
+      </div>
+    </div>
+    <label>每日總預算（USD，選填，用於分配三組活動的建議預算）</label>
+    <input type="number" id="dailyBudget" placeholder="例：50" min="0" step="1" style="max-width:220px;">
+    <p class="hint">ACOS（Advertising Cost of Sale）＝廣告花費 ÷ 廣告帶來的銷售額。目標 ACOS 越低代表你希望廣告越省成本，但出價空間也越小。<br>建議出價公式：<strong>最高可接受出價 = 售價 × 目標ACOS% × 預估轉換率%</strong>，這是業界常用的 PPC 出價上限估算法。</p>
+  </div>
+
+  <div class="panel">
+    <h2>2. 關鍵字清單</h2>
+    <div class="tabs">
+      <button class="btn-ghost btn-sm active" data-tab="paste" onclick="switchInputTab('paste')">✏️ 貼上文字</button>
+      <button class="btn-ghost btn-sm" data-tab="csv" onclick="switchInputTab('csv')">📄 上傳 CSV</button>
+    </div>
+
+    <div class="tab-panel active" id="tab-paste">
+      <label>每行一個關鍵字，選填用逗號加熱度分（1-100，不填預設50）</label>
+      <textarea id="pasteInput" placeholder="usb c fast charger 20000mah,75&#10;portable power bank&#10;車用快充行動電源,40"></textarea>
+    </div>
+    <div class="tab-panel" id="tab-csv">
+      <label>上傳 CSV（相容「跨境電商關鍵字文字雲產生器」匯出格式：關鍵字(英)/關鍵字(中)/熱度/分類/說明）</label>
+      <input type="file" id="csvFile" accept=".csv">
+      <div id="csvPreview" class="hint"></div>
+    </div>
+
+    <div class="examples" id="examples"></div>
+
+    <div class="actions">
+      <button class="btn-primary" onclick="generatePlan()">⚡ 產生廣告活動建議</button>
+      <button class="btn-ghost" onclick="clearAll()">清空</button>
+    </div>
+  </div>
+
+  <div class="panel" id="resultPanel" style="display:none;">
+    <h2>3. 廣告活動建議</h2>
+    <div class="kpi-row" id="kpiRow"></div>
+
+    <div id="campaignBlocks"></div>
+
+    <div id="negativeSection"></div>
+
+    <h3>選用：請 AI 優化整體策略建議</h3>
+    <p class="hint">此按鈕只會請 AI 補充文字策略建議（例如新品期/成熟期出價調整、否定關鍵字補充），<strong>不會覆蓋上方已用公式算好的出價數字</strong>。</p>
+    <div class="actions">
+      <button class="btn-ghost" onclick="aiOptimize()">🤖 產生 AI 策略建議</button>
+    </div>
+    <div class="output-box" id="aiOutput" style="display:none;"></div>
+
+    <div class="actions" style="margin-top:20px;">
+      <button class="btn-ghost btn-sm" onclick="downloadCsvPlan()">⬇ 下載完整清單 CSV</button>
+      <button class="btn-ghost btn-sm" onclick="copyPlan()">📋 複製摘要</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="modal-bg" id="settingsModal">
+  <div class="modal">
+    <h3 style="margin-top:0;">API 金鑰設定（選用，BYOK）</h3>
+    <p class="hint">只有「AI 策略建議」需要金鑰；出價數字全部由前端公式計算，不需要金鑰也能完整使用本工具。金鑰只存瀏覽器 localStorage。</p>
+    <label>服務商</label>
+    <select id="provider">
+      <option value="">不使用 AI</option>
+      <option value="anthropic">Claude (Anthropic)</option>
+      <option value="openai">OpenAI</option>
+      <option value="gemini">Google Gemini</option>
+      <option value="openrouter">OpenRouter</option>
+    </select>
+    <label>API 金鑰</label>
+    <input type="text" id="apiKey" placeholder="sk-...">
+    <label>模型名稱（選填）</label>
+    <input type="text" id="modelName" placeholder="例：claude-sonnet-5">
+    <div class="actions">
+      <button class="btn-primary" onclick="saveSettings()">儲存</button>
+      <button class="btn-ghost" onclick="closeSettings()">取消</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="warn-box">
+    <strong>使用警語</strong>
+    <ul>
+      <li>本工具的出價建議、熱度分數皆為<strong>估算輔助工具</strong>，不是 Amazon Ads 官方數據，實際投放前請務必在 Amazon Advertising 後台核對真實競價與流量數據。</li>
+      <li>「熱度分」若來自其他工具（例如關鍵字文字雲產生器）本身就是 AI 主觀估計，並非真實搜尋量，請勿作為唯一決策依據。</li>
+      <li>比對類型（精準/詞組/廣泛）與否定關鍵字候選皆為規則式判斷，僅供參考，正式建立廣告活動前請自行複核每個關鍵字。</li>
+      <li>請勿輸入真實機密銷售數據；所有資料只存在你的瀏覽器，不會上傳到任何伺服器。</li>
+      <li>僅供教學、課程及個人使用，禁止未經授權公開發布、販售或商業化使用。</li>
+    </ul>
+  </div>
+  <div class="creator-box">製作：<strong>Mark Tsai（蔡豐全）</strong>｜<a href="mailto:tsaimark@gmail.com">tsaimark@gmail.com</a>｜完整經歷見<a href="manual.html">操作手冊</a></div>
+  <div class="footer-meta">
+    <span>© 2026 Amazon PPC 關鍵字廣告建議工具</span>
+    <img src="https://visitor-badge.laobi.icu/badge?page_id=m255525.amazon-ppc-advisor" alt="訪客次數" style="vertical-align:middle;height:20px;">
+    <button type="button" id="installBtn" class="footer-link-btn">📲 加入主畫面</button>
+    <a href="manual.html">操作手冊 →</a>
+  </div>
+</footer>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* ================= 頂部跑馬燈 ================= */
+(function () {
+  'use strict';
+  var MARQUEE_CHECK_URL = "https://script.google.com/macros/s/AKfycbwKX0DNNbY8y4nf90BFTHtxgfqJcHHcZasRrgycl4QAe52_hkjMWSkYk4xOsqU-JPCROw/exec";
+  var STORAGE_KEY = 'ppcAdvisorMarquee';
+  var REFRESH_MS = 20 * 60 * 1000;
+  var bar = document.getElementById('marqueeBar');
+  var track = document.getElementById('marqueeTrack');
+  var lastKey = null;
+  function loadCache() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch (e) { return []; } }
+  function saveCache(items) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch (e) {} }
+  function appendParsedText(container, text) {
+    var re = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
+    var lastIndex = 0, m;
+    while ((m = re.exec(text))) {
+      if (m.index > lastIndex) container.appendChild(document.createTextNode(text.slice(lastIndex, m.index)));
+      var a = document.createElement('a');
+      a.href = m[2]; a.textContent = m[1]; a.target = '_blank'; a.rel = 'noopener noreferrer';
+      a.style.color = 'inherit'; a.style.textDecoration = 'underline';
+      container.appendChild(a);
+      lastIndex = re.lastIndex;
+    }
+    if (lastIndex < text.length) container.appendChild(document.createTextNode(text.slice(lastIndex)));
+  }
+  function buildTrackContent(items) {
+    var frag = document.createDocumentFragment();
+    function appendPass() {
+      items.forEach(function (item, idx) {
+        if (idx > 0) frag.appendChild(document.createTextNode('　★　'));
+        appendParsedText(frag, item);
+      });
+    }
+    appendPass();
+    frag.appendChild(document.createTextNode('　★　'));
+    appendPass();
+    return frag;
+  }
+  function render(items) {
+    if (!items || !items.length) return;
+    var key = JSON.stringify(items);
+    if (key === lastKey) return;
+    lastKey = key;
+    track.innerHTML = '';
+    track.appendChild(buildTrackContent(items));
+    bar.classList.add('show');
+    document.body.classList.add('has-marquee');
+    var width = track.scrollWidth / 2;
+    track.style.animationDuration = Math.max(width / 80, 10) + 's';
+  }
+  function fetchMarquee() {
+    fetch(MARQUEE_CHECK_URL, { method: 'POST', body: JSON.stringify({ serial: '' }) })
+      .then(function (r) { return r.json(); })
+      .then(function (data) { if (data && Array.isArray(data.marquee) && data.marquee.length) { saveCache(data.marquee); render(data.marquee); } })
+      .catch(function () {});
+  }
+  render(loadCache());
+  fetchMarquee();
+  setInterval(fetchMarquee, REFRESH_MS);
+})();
+
+/* ================= PWA 加入主畫面 ================= */
+(function () {
+  'use strict';
+  var deferredPrompt = null;
+  var btn = document.getElementById('installBtn');
+  var ua = navigator.userAgent || '';
+  var isIOSDevice = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var isMacDesktop = /Macintosh/.test(ua) && !isIOSDevice;
+  var isSafariEngine = /^((?!chrome|crios|fxios|edgios|android).)*safari/i.test(ua);
+  var isStandalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+  function fallbackMessage() {
+    if (isIOSDevice) return '請點畫面上的「分享」圖示，選「加入主畫面」';
+    if (isMacDesktop && isSafariEngine) return '請用選單列「檔案」→「加入 Dock」（Safari 17 以上）';
+    return '目前瀏覽器不支援安裝，或已安裝過';
+  }
+  function notify(msg) {
+    var t = document.getElementById('toast');
+    if (!t) { window.alert(msg); return; }
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(notify._timer);
+    notify._timer = setTimeout(function () { t.classList.remove('show'); }, 2400);
+  }
+  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferredPrompt = e; });
+  window.addEventListener('appinstalled', function () { deferredPrompt = null; });
+  if (btn) {
+    if (isStandalone) { btn.style.display = 'none'; }
+    else {
+      btn.addEventListener('click', function () {
+        if (!deferredPrompt) { notify(fallbackMessage()); return; }
+        try { deferredPrompt.prompt(); deferredPrompt.userChoice.then(function () { deferredPrompt = null; }); }
+        catch (e) { notify(fallbackMessage()); }
+      });
+    }
+  }
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () { navigator.serviceWorker.register('service-worker.js').catch(function () {}); });
+  }
+})();
+
+/* ================= 內建範例 ================= */
+const EXAMPLES = [
+  {
+    label:"露營燈", productName:"USB-C 充電式露營燈", price:24.99, targetAcos:28, convRate:9,
+    keywords:[
+      {text:"camping lantern", weight:82},
+      {text:"rechargeable led lantern", weight:58},
+      {text:"usb c camping lantern 1000 lumens", weight:22},
+      {text:"tent light", weight:65},
+      {text:"portable lantern for power outage emergency", weight:15},
+      {text:"outdoor lighting", weight:70},
+      {text:"led lantern with hook for tent", weight:19},
+      {text:"camping gear", weight:88},
+    ]
+  },
+  {
+    label:"瑜伽墊", productName:"6mm加厚防滑瑜伽墊", price:32.5, targetAcos:25, convRate:12,
+    keywords:[
+      {text:"yoga mat", weight:90},
+      {text:"non slip yoga mat 6mm", weight:35},
+      {text:"thick yoga mat for beginners", weight:24},
+      {text:"exercise mat", weight:68},
+      {text:"eco friendly yoga mat with carrying strap", weight:12},
+      {text:"fitness equipment", weight:75},
+      {text:"pilates mat extra thick", weight:20},
+    ]
+  },
+  {
+    label:"藍牙耳機", productName:"降噪藍牙耳機 Pro", price:59.99, targetAcos:22, convRate:8,
+    keywords:[
+      {text:"bluetooth earbuds", weight:92},
+      {text:"noise cancelling earbuds", weight:60},
+      {text:"wireless earbuds with charging case", weight:38},
+      {text:"earbuds for running sweatproof", weight:18},
+      {text:"headphones", weight:85},
+      {text:"anc earbuds long battery life 40 hours", weight:14},
+      {text:"bluetooth 5.3 earbuds ipx7 waterproof", weight:16},
+    ]
+  },
+  {
+    label:"兒童安全座椅", productName:"0-4歲汽車安全座椅", price:189.0, targetAcos:18, convRate:6,
+    keywords:[
+      {text:"car seat", weight:88},
+      {text:"convertible car seat for infant", weight:40},
+      {text:"toddler car seat 0-4 years", weight:22},
+      {text:"baby gear", weight:70},
+      {text:"car seat with side impact protection", weight:15},
+      {text:"rear facing car seat easy install", weight:17},
+    ]
+  },
+  {
+    label:"咖啡研磨機", productName:"電動咖啡豆研磨機", price:44.0, targetAcos:26, convRate:11,
+    keywords:[
+      {text:"coffee grinder", weight:86},
+      {text:"electric burr grinder", weight:48},
+      {text:"coffee grinder for pour over and espresso", weight:20},
+      {text:"kitchen appliance", weight:75},
+      {text:"stainless steel coffee bean grinder quiet motor", weight:13},
+      {text:"espresso grinder adjustable settings", weight:19},
+    ]
+  },
+];
+
+function renderExamples(){
+  const box = document.getElementById('examples');
+  box.innerHTML = EXAMPLES.map((ex,i)=>`<button class="btn-ghost btn-sm" onclick="loadExample(${i})">${ex.label}</button>`).join('');
+}
+function loadExample(i){
+  const ex = EXAMPLES[i];
+  document.getElementById('productName').value = ex.productName;
+  document.getElementById('price').value = ex.price;
+  document.getElementById('targetAcos').value = ex.targetAcos;
+  document.getElementById('convRate').value = ex.convRate;
+  switchInputTab('paste');
+  document.getElementById('pasteInput').value = ex.keywords.map(k=>k.text+','+k.weight).join('\n');
+}
+renderExamples();
+
+function switchInputTab(tab){
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+  document.getElementById('tab-paste').classList.toggle('active', tab==='paste');
+  document.getElementById('tab-csv').classList.toggle('active', tab==='csv');
+}
+
+function clearAll(){
+  document.getElementById('pasteInput').value = '';
+  document.getElementById('csvFile').value = '';
+  document.getElementById('csvPreview').textContent = '';
+  document.getElementById('resultPanel').style.display = 'none';
+}
+
+/* ================= CSV 解析（零依賴，支援引號跳脫） ================= */
+function parseCSV(text){
+  const rows = [];
+  let row = [], field = '', inQuotes = false;
+  for(let i=0;i<text.length;i++){
+    const c = text[i];
+    if(inQuotes){
+      if(c === '"'){
+        if(text[i+1] === '"'){ field += '"'; i++; } else { inQuotes = false; }
+      } else field += c;
+    } else {
+      if(c === '"') inQuotes = true;
+      else if(c === ','){ row.push(field); field=''; }
+      else if(c === '\n' || c === '\r'){
+        if(c === '\r' && text[i+1] === '\n') i++;
+        row.push(field); field='';
+        if(!(row.length===1 && row[0]==='')) rows.push(row);
+        row = [];
+      } else field += c;
+    }
+  }
+  if(field !== '' || row.length){ row.push(field); rows.push(row); }
+  return rows;
+}
+
+let uploadedKeywords = null; // 上傳CSV後解析出的關鍵字物件陣列
+
+document.getElementById('csvFile').addEventListener('change', function(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(){
+    try{
+      const rows = parseCSV(reader.result);
+      if(!rows.length) throw new Error('檔案是空的');
+      const header = rows[0].map(h=>h.trim());
+      const idxEn = header.findIndex(h=>/關鍵字\(英\)|keyword.?en|^keyword$/i.test(h));
+      const idxZh = header.findIndex(h=>/關鍵字\(中\)|keyword.?zh/i.test(h));
+      const idxWeight = header.findIndex(h=>/熱度|weight|score/i.test(h));
+      const idxCategory = header.findIndex(h=>/分類|category/i.test(h));
+      const dataRows = rows.slice(1).filter(r=>r.some(c=>c.trim()!==''));
+      uploadedKeywords = dataRows.map(r=>({
+        text: (idxEn>=0 ? r[idxEn] : r[0]) || '',
+        zh: idxZh>=0 ? r[idxZh] : '',
+        weight: idxWeight>=0 ? (Number(r[idxWeight])||50) : 50,
+        category: idxCategory>=0 ? r[idxCategory] : ''
+      })).filter(k=>k.text.trim()!=='');
+      document.getElementById('csvPreview').textContent = `已讀取 ${uploadedKeywords.length} 個關鍵字（欄位比對：${idxEn>=0?'英文✓':'英文✗(用第一欄)'} ${idxZh>=0?'中文✓':''} ${idxWeight>=0?'熱度✓':'熱度✗(預設50)'} ${idxCategory>=0?'分類✓':''}）`;
+      switchInputTab('csv');
+    }catch(err){
+      document.getElementById('csvPreview').textContent = 'CSV 解析失敗：' + err.message;
+      uploadedKeywords = null;
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+});
+
+/* ================= 規則式引擎：比對類型分類 ================= */
+function estimateSpecificity(text){
+  const hasLatin = /[a-zA-Z]/.test(text);
+  if(hasLatin){
+    return text.trim().split(/\s+/).filter(Boolean).length;
+  }
+  const len = text.replace(/\s+/g,'').length;
+  if(len <= 3) return 1;
+  if(len <= 6) return 2;
+  if(len <= 9) return 3;
+  return 4;
+}
+const NEGATIVE_SIGNAL_WORDS = /(免費|free\b|二手|used\b|中古|維修|repair\b|教學|tutorial|diy\b|租借|出租|rental\b|破解|盜版|山寨|仿冒|replica\b|fake\b)/i;
+
+function classifyKeyword(kw){
+  const spec = estimateSpecificity(kw.text);
+  let matchType;
+  const cat = (kw.category || '').trim();
+  if(cat === '長尾詞' || cat === '痛點詞'){ matchType = 'exact'; }
+  else if(cat === '場景詞'){ matchType = 'phrase'; }
+  else if(cat === '短尾核心詞'){ matchType = 'broad'; }
+  else {
+    if(spec >= 4) matchType = 'exact';
+    else if(spec === 3) matchType = 'phrase';
+    else matchType = 'broad';
+  }
+  const negativeFlag = NEGATIVE_SIGNAL_WORDS.test(kw.text);
+  return {matchType, negativeFlag, specificity: spec};
+}
+
+const COMPETITION_TIER = [
+  {min:70, label:'高競爭', range:[0.9, 1.15]},
+  {min:40, label:'中競爭', range:[0.7, 0.95]},
+  {min:0,  label:'低競爭', range:[0.5, 0.75]},
+];
+function competitionTierFor(weight){
+  return COMPETITION_TIER.find(t=>weight>=t.min);
+}
+
+/* ================= 產生廣告活動建議 ================= */
+let lastPlan = null;
+
+function getKeywordInput(){
+  const activeTab = document.querySelector('.tabs button.active').dataset.tab;
+  if(activeTab === 'csv'){
+    if(!uploadedKeywords || !uploadedKeywords.length) return null;
+    return uploadedKeywords;
+  }
+  const raw = document.getElementById('pasteInput').value.trim();
+  if(!raw) return null;
+  return raw.split('\n').map(line=>{
+    const parts = line.split(',');
+    const text = (parts[0]||'').trim();
+    const weight = parts[1] !== undefined ? (Number(parts[1].trim())||50) : 50;
+    return {text, zh:'', weight, category:''};
+  }).filter(k=>k.text!=='');
+}
+
+function generatePlan(){
+  const keywords = getKeywordInput();
+  if(!keywords || !keywords.length){ alert('請先貼上關鍵字或上傳 CSV'); return; }
+
+  const price = Number(document.getElementById('price').value) || 0;
+  const targetAcos = Number(document.getElementById('targetAcos').value) || 0;
+  const convRate = Number(document.getElementById('convRate').value) || 0;
+  const dailyBudget = Number(document.getElementById('dailyBudget').value) || 0;
+
+  const maxCPC = price * (targetAcos/100) * (convRate/100);
+
+  const enriched = keywords.map(kw=>{
+    const cls = classifyKeyword(kw);
+    const tier = competitionTierFor(kw.weight);
+    const bidLow = maxCPC * tier.range[0];
+    const bidHigh = maxCPC * tier.range[1];
+    return {...kw, ...cls, tierLabel: tier.label, bidLow, bidHigh};
+  });
+
+  const groups = {exact: [], phrase: [], broad: []};
+  enriched.forEach(k=>groups[k.matchType].push(k));
+  const negatives = enriched.filter(k=>k.negativeFlag);
+
+  lastPlan = {price, targetAcos, convRate, dailyBudget, maxCPC, enriched, groups, negatives, productName: document.getElementById('productName').value};
+
+  renderResult(lastPlan);
+  document.getElementById('resultPanel').style.display = 'block';
+  document.getElementById('resultPanel').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function fmtUSD(n){ return '$' + n.toFixed(2); }
+
+function renderResult(plan){
+  const kpiRow = document.getElementById('kpiRow');
+  const totalKw = plan.enriched.length;
+  let budgetHint = '';
+  if(plan.dailyBudget > 0){
+    budgetHint = `精準 $${(plan.dailyBudget*0.5).toFixed(0)} / 詞組 $${(plan.dailyBudget*0.3).toFixed(0)} / 廣泛 $${(plan.dailyBudget*0.2).toFixed(0)}`;
+  }
+  kpiRow.innerHTML = `
+    <div class="kpi-card"><div class="kpi-label">最高可接受出價 (Max CPC)</div><div class="kpi-value">${fmtUSD(plan.maxCPC)}</div><div class="kpi-sub">售價×目標ACOS%×轉換率%</div></div>
+    <div class="kpi-card"><div class="kpi-label">關鍵字總數</div><div class="kpi-value">${totalKw}</div><div class="kpi-sub">精準${plan.groups.exact.length}／詞組${plan.groups.phrase.length}／廣泛${plan.groups.broad.length}</div></div>
+    <div class="kpi-card"><div class="kpi-label">潛在否定關鍵字候選</div><div class="kpi-value" style="color:${plan.negatives.length?'var(--bad)':'var(--ok)'}">${plan.negatives.length}</div><div class="kpi-sub">偵測到與購買意圖不符的字眼</div></div>
+    <div class="kpi-card"><div class="kpi-label">建議每日預算分配</div><div class="kpi-value" style="font-size:14px;">${budgetHint || '未填總預算'}</div><div class="kpi-sub">精準50%／詞組30%／廣泛20%</div></div>
+  `;
+
+  const MATCH_META = {
+    exact: {label:'精準比對 Exact Match', desc:'具體、高購買意圖的長尾/痛點詞，適合精準出價衝轉換率', cls:'exact'},
+    phrase: {label:'詞組比對 Phrase Match', desc:'中等具體度的場景詞，適合測試不同語境的轉換表現', cls:'phrase'},
+    broad: {label:'廣泛比對 Broad Match', desc:'廣泛核心詞，適合用來探索新關鍵字，但要密切監控花費', cls:'broad'},
+  };
+
+  const blocks = document.getElementById('campaignBlocks');
+  blocks.innerHTML = '';
+  ['exact','phrase','broad'].forEach(type=>{
+    const meta = MATCH_META[type];
+    const list = plan.groups[type];
+    const block = document.createElement('div');
+    block.className = 'campaign-block';
+    let rows = list.map(k=>`
+      <tr>
+        <td>${escapeHtml(k.text)}${k.zh?'<br><span style="color:var(--sub);font-size:11px;">'+escapeHtml(k.zh)+'</span>':''}${k.negativeFlag?'<br><span class="neg-flag">⚠ 潛在否定關鍵字候選</span>':''}</td>
+        <td class="num">${k.weight}</td>
+        <td>${k.tierLabel}</td>
+        <td class="num">${fmtUSD(k.bidLow)} – ${fmtUSD(k.bidHigh)}</td>
+      </tr>`).join('');
+    if(!list.length) rows = `<tr><td colspan="4" style="color:var(--sub);">（此類別目前沒有關鍵字）</td></tr>`;
+    block.innerHTML = `
+      <div class="campaign-head"><span class="dot ${meta.cls}"></span><strong>${meta.label}</strong><span style="color:var(--sub);font-size:12px;">— ${meta.desc}</span></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>關鍵字</th><th>熱度</th><th>競爭度</th><th>建議出價區間</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+    blocks.appendChild(block);
+  });
+
+  const negSection = document.getElementById('negativeSection');
+  if(plan.negatives.length){
+    negSection.innerHTML = `
+      <h3>⚠ 潛在否定關鍵字候選（建議加入廣告活動的否定關鍵字清單）</h3>
+      <ul>${plan.negatives.map(k=>`<li>${escapeHtml(k.text)} — 偵測到與購買意圖可能不符的字眼</li>`).join('')}</ul>
+      <p class="hint">這是規則式偵測（免費/二手/教學/DIY/租借/仿冒等字眼），僅供參考，請自行判斷是否真的要排除。</p>`;
+  } else {
+    negSection.innerHTML = '';
+  }
+
+  document.getElementById('aiOutput').style.display = 'none';
+  document.getElementById('aiOutput').textContent = '';
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ================= 匯出 ================= */
+function downloadCsvPlan(){
+  if(!lastPlan){ alert('請先產生廣告活動建議'); return; }
+  const rows = [['關鍵字','中文','比對類型','熱度','競爭度','建議出價下限','建議出價上限','潛在否定關鍵字']];
+  lastPlan.enriched.forEach(k=>{
+    rows.push([k.text, k.zh||'', k.matchType, k.weight, k.tierLabel, k.bidLow.toFixed(2), k.bidHigh.toFixed(2), k.negativeFlag?'是':'']);
+  });
+  const csv = rows.map(r=>r.map(csvCell).join(',')).join('\r\n');
+  const blob = new Blob(['﻿'+csv], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'amazon-ppc-plan.csv';
+  a.click();
+}
+function csvCell(v){
+  v = (v===undefined||v===null) ? '' : String(v);
+  if(/[",\n]/.test(v)) v = '"' + v.replace(/"/g,'""') + '"';
+  return v;
+}
+function copyPlan(){
+  if(!lastPlan){ alert('請先產生廣告活動建議'); return; }
+  const lines = [`Amazon PPC 廣告活動建議（Max CPC: ${fmtUSD(lastPlan.maxCPC)}）`];
+  ['exact','phrase','broad'].forEach(type=>{
+    const label = type==='exact'?'精準比對':type==='phrase'?'詞組比對':'廣泛比對';
+    lines.push(`\n【${label}】`);
+    lastPlan.groups[type].forEach(k=>lines.push(`${k.text}｜${fmtUSD(k.bidLow)}–${fmtUSD(k.bidHigh)}`));
+  });
+  navigator.clipboard.writeText(lines.join('\n')).then(()=>alert('已複製到剪貼簿'));
+}
+
+/* ================= 設定 / BYOK ================= */
+function openSettings(){
+  const s = JSON.parse(localStorage.getItem('ppcAdvisorSettings')||'{}');
+  document.getElementById('provider').value = s.provider||'';
+  document.getElementById('apiKey').value = s.apiKey||'';
+  document.getElementById('modelName').value = s.model||'';
+  document.getElementById('settingsModal').style.display='flex';
+}
+function closeSettings(){ document.getElementById('settingsModal').style.display='none'; }
+function saveSettings(){
+  const s = {
+    provider: document.getElementById('provider').value,
+    apiKey: document.getElementById('apiKey').value.trim(),
+    model: document.getElementById('modelName').value.trim()
+  };
+  localStorage.setItem('ppcAdvisorSettings', JSON.stringify(s));
+  closeSettings();
+}
+
+/* ================= AI 策略建議（選用，不動出價數字） ================= */
+async function aiOptimize(){
+  if(!lastPlan){ alert('請先產生廣告活動建議'); return; }
+  const settings = JSON.parse(localStorage.getItem('ppcAdvisorSettings')||'{}');
+  if(!settings.provider || !settings.apiKey){ alert('請先在右上角「API 金鑰設定」填入金鑰才能使用此功能'); return; }
+
+  const outBox = document.getElementById('aiOutput');
+  outBox.style.display = 'block';
+  outBox.textContent = '產生中…';
+
+  const summary = `商品：${lastPlan.productName||'（未提供）'}\n售價：$${lastPlan.price}\n目標ACOS：${lastPlan.targetAcos}%\n預估轉換率：${lastPlan.convRate}%\n最高可接受出價：${fmtUSD(lastPlan.maxCPC)}\n精準比對關鍵字數：${lastPlan.groups.exact.length}\n詞組比對關鍵字數：${lastPlan.groups.phrase.length}\n廣泛比對關鍵字數：${lastPlan.groups.broad.length}\n潛在否定關鍵字：${lastPlan.negatives.map(k=>k.text).join('、')||'無'}`;
+
+  const systemPrompt = `你是資深 Amazon PPC 廣告投手顧問。使用者已經用公式算好了每個關鍵字的建議出價區間與分類，你的任務只是補充「文字策略建議」，例如：新品期該用什麼廣泛策略衝曝光、成熟期該如何逐步收斂到精準比對、否定關鍵字還可以留意哪些方向、每日預算該怎麼分配。絕對不要輸出任何具體金額數字或出價表格（那些已經由前端公式算好，你不清楚實際情況不該重新報數字），只給策略性文字建議，繁體中文，300字以內。`;
+
+  try{
+    const text = await providerCall(settings, systemPrompt, summary);
+    outBox.textContent = text.trim();
+  }catch(err){
+    outBox.textContent = 'AI 產生失敗：' + err.message;
+  }
+}
+
+async function providerCall(settings, systemPrompt, userPrompt){
+  const {provider, apiKey, model} = settings;
+  if(provider === 'anthropic'){
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body: JSON.stringify({model: model || 'claude-sonnet-5', max_tokens: 600, system: systemPrompt, messages:[{role:'user', content:userPrompt}]})
+    });
+    if(!res.ok) throw new Error('Anthropic API 錯誤 '+res.status);
+    const data = await res.json();
+    return data.content[0].text;
+  }
+  if(provider === 'openai'){
+    const res = await fetch('https://api.openai.com/v1/chat/completions',{
+      method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
+      body: JSON.stringify({model: model || 'gpt-4o-mini', messages:[{role:'system',content:systemPrompt},{role:'user',content:userPrompt}]})
+    });
+    if(!res.ok) throw new Error('OpenAI API 錯誤 '+res.status);
+    const data = await res.json();
+    return data.choices[0].message.content;
+  }
+  if(provider === 'gemini'){
+    const m = model || 'gemini-2.5-flash';
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${apiKey}`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({contents:[{role:'user', parts:[{text: systemPrompt+'\n\n'+userPrompt}]}]})
+    });
+    if(!res.ok) throw new Error('Gemini API 錯誤 '+res.status);
+    const data = await res.json();
+    return data.candidates[0].content.parts[0].text;
+  }
+  if(provider === 'openrouter'){
+    const res = await fetch('https://openrouter.ai/api/v1/chat/completions',{
+      method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
+      body: JSON.stringify({model: model || 'anthropic/claude-sonnet-5', messages:[{role:'system',content:systemPrompt},{role:'user',content:userPrompt}]})
+    });
+    if(!res.ok) throw new Error('OpenRouter API 錯誤 '+res.status);
+    const data = await res.json();
+    return data.choices[0].message.content;
+  }
+  throw new Error('未知的服務商');
+}
+</script>
+</body>
+</html>
