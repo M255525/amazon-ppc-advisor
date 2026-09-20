@@ -142,6 +142,12 @@ footer{max-width:900px;margin:0 auto;padding:20px 20px 60px;display:flex;flex-di
     <label>每日總預算（USD，選填，用於分配三組活動的建議預算）</label>
     <input type="number" id="dailyBudget" placeholder="例：50" min="0" step="1" style="max-width:220px;">
     <p class="hint">ACOS（Advertising Cost of Sale）＝廣告花費 ÷ 廣告帶來的銷售額。目標 ACOS 越低代表你希望廣告越省成本，但出價空間也越小。<br>建議出價公式：<strong>最高可接受出價 = 售價 × 目標ACOS% × 預估轉換率%</strong>，這是業界常用的 PPC 出價上限估算法。</p>
+    <div class="field-grid">
+      <div><label>姓名（選填，用於下載練習證明）</label><input type="text" id="idName" maxlength="40" placeholder="例如：王小明"></div>
+      <div><label>學號（選填）</label><input type="text" id="idStudentId" maxlength="30" placeholder="選填"></div>
+      <div><label>系所（選填）</label><input type="text" id="idDept" maxlength="40" placeholder="選填"></div>
+      <div><label>組別（選填）</label><input type="text" id="idGroup" maxlength="30" placeholder="選填"></div>
+    </div>
   </div>
 
   <div class="panel">
@@ -187,6 +193,7 @@ footer{max-width:900px;margin:0 auto;padding:20px 20px 60px;display:flex;flex-di
     <div class="actions" style="margin-top:20px;">
       <button class="btn-ghost btn-sm" onclick="downloadCsvPlan()">⬇ 下載完整清單 CSV</button>
       <button class="btn-ghost btn-sm" onclick="copyPlan()">📋 複製摘要</button>
+      <button class="btn-ghost btn-sm" onclick="downloadPracticeCertificate()">🎓 下載練習證明（圖檔）</button>
     </div>
   </div>
 
@@ -222,7 +229,7 @@ footer{max-width:900px;margin:0 auto;padding:20px 20px 60px;display:flex;flex-di
       <li>本工具的出價建議、熱度分數皆為<strong>估算輔助工具</strong>，不是 Amazon Ads 官方數據，實際投放前請務必在 Amazon Advertising 後台核對真實競價與流量數據。</li>
       <li>「熱度分」若來自其他工具（例如關鍵字文字雲產生器）本身就是 AI 主觀估計，並非真實搜尋量，請勿作為唯一決策依據。</li>
       <li>比對類型（精準/詞組/廣泛）與否定關鍵字候選皆為規則式判斷，僅供參考，正式建立廣告活動前請自行複核每個關鍵字。</li>
-      <li>請勿輸入真實機密銷售數據；所有資料只存在你的瀏覽器，不會上傳到任何伺服器。</li>
+      <li>請勿輸入真實機密銷售數據；所有資料只存在你的瀏覽器，不會上傳到任何伺服器；「姓名／學號／系所／組別」為選填欄位，僅用於你自行下載的練習證明圖檔，同樣只存在你的瀏覽器本機。</li>
       <li>僅供教學、課程及個人使用，禁止未經授權公開發布、販售或商業化使用。</li>
     </ul>
   </div>
@@ -668,6 +675,109 @@ function copyPlan(){
   });
   navigator.clipboard.writeText(lines.join('\n')).then(()=>alert('已複製到剪貼簿'));
 }
+
+/* ================= 身分資料與練習證明（PNG 圖檔，Canvas 繪製） ================= */
+const IDENTITY_KEY = 'ppcAdvisorIdentity';
+function loadIdentity(){
+  try{ return JSON.parse(localStorage.getItem(IDENTITY_KEY) || '{}'); }catch(e){ return {}; }
+}
+function saveIdentity(){
+  const d = {
+    name: document.getElementById('idName').value,
+    studentId: document.getElementById('idStudentId').value,
+    dept: document.getElementById('idDept').value,
+    group: document.getElementById('idGroup').value
+  };
+  try{ localStorage.setItem(IDENTITY_KEY, JSON.stringify(d)); }catch(e){}
+}
+function restoreIdentity(){
+  const d = loadIdentity();
+  document.getElementById('idName').value = d.name || '';
+  document.getElementById('idStudentId').value = d.studentId || '';
+  document.getElementById('idDept').value = d.dept || '';
+  document.getElementById('idGroup').value = d.group || '';
+}
+function wrapCanvasText(ctx, text, maxWidth){
+  const lines = []; let line = '';
+  for(let i = 0; i < text.length; i++){
+    const test = line + text[i];
+    if(ctx.measureText(test).width > maxWidth && line){ lines.push(line); line = text[i]; }
+    else line = test;
+  }
+  if(line) lines.push(line);
+  return lines;
+}
+function downloadPracticeCertificate(){
+  if(!lastPlan){ alert('請先產生廣告活動建議'); return; }
+  const name = document.getElementById('idName').value.trim();
+  const sid = document.getElementById('idStudentId').value.trim();
+  const dept = document.getElementById('idDept').value.trim();
+  const group = document.getElementById('idGroup').value.trim();
+  const d = new Date();
+  const dateStr = d.getFullYear() + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + String(d.getDate()).padStart(2,'0');
+
+  const W = 1000, H = 700;
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = '#0d0b1a'; ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = '#7c5cff'; ctx.lineWidth = 3; ctx.strokeRect(24, 24, W-48, H-48);
+  ctx.strokeStyle = 'rgba(124,92,255,0.35)'; ctx.lineWidth = 1; ctx.strokeRect(34, 34, W-68, H-68);
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#7c5cff';
+  ctx.font = 'bold 20px "Microsoft JhengHei", sans-serif';
+  ctx.fillText('PRACTICE CERTIFICATE', W/2, 90);
+  ctx.fillStyle = '#e9e7f5';
+  ctx.font = 'bold 32px "Microsoft JhengHei", sans-serif';
+  ctx.fillText('練習證明', W/2, 138);
+  ctx.font = '17px "Microsoft JhengHei", sans-serif';
+  ctx.fillStyle = '#9d97c2';
+  ctx.fillText('Amazon PPC 關鍵字廣告建議工具', W/2, 170);
+
+  ctx.strokeStyle = 'rgba(124,92,255,0.4)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(120, 196); ctx.lineTo(W-120, 196); ctx.stroke();
+
+  let y = 246; const lineH = 40;
+  ctx.font = '20px "Microsoft JhengHei", sans-serif';
+  function row(label, value){
+    ctx.textAlign = 'right'; ctx.fillStyle = '#71698f';
+    ctx.fillText(label, W/2 - 16, y);
+    ctx.textAlign = 'left'; ctx.fillStyle = '#e9e7f5';
+    ctx.fillText(value || '（未填寫）', W/2, y);
+    y += lineH;
+  }
+  row('姓名：', name); row('學號：', sid); row('系所：', dept); row('組別：', group);
+
+  y += 14;
+  ctx.textAlign = 'center';
+  ctx.font = '16px "Microsoft JhengHei", sans-serif';
+  ctx.fillStyle = '#9d97c2';
+  const product = document.getElementById('productName').value.trim() || '未命名商品';
+  const summary = '已完成「' + product + '」廣告活動建議，Max CPC ' + fmtUSD(lastPlan.maxCPC);
+  wrapCanvasText(ctx, summary, W-200).forEach(ln=>{ ctx.fillText(ln, W/2, y); y += 26; });
+  y += 8;
+  ctx.fillText('產出日期：' + dateStr, W/2, y);
+
+  ctx.font = '12px "Microsoft JhengHei", sans-serif';
+  ctx.fillStyle = '#5f5980';
+  ctx.fillText('本證明由使用者自行下載，僅供課程練習存證使用，非官方發行文件', W/2, H-50);
+  ctx.fillText('Amazon PPC 關鍵字廣告建議工具 · Mark Tsai', W/2, H-30);
+
+  canvas.toBlob(blob=>{
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const stamp = d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0');
+    a.href = url; a.download = '練習證明_' + (name || '未填寫姓名') + '_' + stamp + '.png';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+}
+['idName','idStudentId','idDept','idGroup'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', saveIdentity);
+});
+restoreIdentity();
 
 /* ================= 設定 / BYOK ================= */
 function openSettings(){
