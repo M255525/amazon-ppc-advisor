@@ -849,16 +849,6 @@ function restoreIdentity(){
   document.getElementById('idDept').value = d.dept || '';
   document.getElementById('idGroup').value = d.group || '';
 }
-function wrapCanvasText(ctx, text, maxWidth){
-  const lines = []; let line = '';
-  for(let i = 0; i < text.length; i++){
-    const test = line + text[i];
-    if(ctx.measureText(test).width > maxWidth && line){ lines.push(line); line = text[i]; }
-    else line = test;
-  }
-  if(line) lines.push(line);
-  return lines;
-}
 function downloadPracticeCertificate(){
   if(!lastPlan){ alert('請先產生廣告活動建議'); return; }
   const name = document.getElementById('idName').value.trim();
@@ -868,7 +858,17 @@ function downloadPracticeCertificate(){
   const d = new Date();
   const dateStr = d.getFullYear() + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + String(d.getDate()).padStart(2,'0');
 
-  const W = 1000, H = 700;
+  function groupRange(list){
+    if(!list.length) return null;
+    let lo = Infinity, hi = -Infinity;
+    list.forEach(k=>{ lo = Math.min(lo, k.bidLow); hi = Math.max(hi, k.bidHigh); });
+    return [lo, hi];
+  }
+  const rExact = groupRange(lastPlan.groups.exact);
+  const rPhrase = groupRange(lastPlan.groups.phrase);
+  const rBroad = groupRange(lastPlan.groups.broad);
+
+  const W = 1000, H = 800;
   const canvas = document.createElement('canvas');
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext('2d');
@@ -891,25 +891,41 @@ function downloadPracticeCertificate(){
   ctx.strokeStyle = 'rgba(124,92,255,0.4)'; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(120, 196); ctx.lineTo(W-120, 196); ctx.stroke();
 
-  let y = 246; const lineH = 40;
+  let y = 246;
   ctx.font = '20px "Microsoft JhengHei", sans-serif';
-  function row(label, value){
+  function row(label, value, lh){
+    lh = lh || 40;
     ctx.textAlign = 'right'; ctx.fillStyle = '#71698f';
     ctx.fillText(label, W/2 - 16, y);
     ctx.textAlign = 'left'; ctx.fillStyle = '#e9e7f5';
     ctx.fillText(value || '（未填寫）', W/2, y);
-    y += lineH;
+    y += lh;
   }
   row('姓名：', name); row('學號：', sid); row('系所：', dept); row('組別：', group);
 
   y += 14;
+  ctx.strokeStyle = 'rgba(124,92,255,0.4)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(120, y); ctx.lineTo(W-120, y); ctx.stroke();
+  y += 34;
+
   ctx.textAlign = 'center';
-  ctx.font = '16px "Microsoft JhengHei", sans-serif';
-  ctx.fillStyle = '#9d97c2';
+  ctx.fillStyle = '#7c5cff';
+  ctx.font = 'bold 15px "Microsoft JhengHei", sans-serif';
   const product = document.getElementById('productName').value.trim() || '未命名商品';
-  const summary = '已完成「' + product + '」廣告活動建議，Max CPC ' + fmtUSD(lastPlan.maxCPC);
-  wrapCanvasText(ctx, summary, W-200).forEach(ln=>{ ctx.fillText(ln, W/2, y); y += 26; });
-  y += 8;
+  ctx.fillText('廣告活動建議摘要 — ' + product, W/2, y);
+  y += 32;
+
+  ctx.font = '17px "Microsoft JhengHei", sans-serif';
+  row('最高可接受出價 (Max CPC)：', fmtUSD(lastPlan.maxCPC), 32);
+  row('精準比對 Exact：', lastPlan.groups.exact.length + ' 組' + (rExact ? '｜出價 ' + fmtUSD(rExact[0]) + '–' + fmtUSD(rExact[1]) : '（無）'), 32);
+  row('詞組比對 Phrase：', lastPlan.groups.phrase.length + ' 組' + (rPhrase ? '｜出價 ' + fmtUSD(rPhrase[0]) + '–' + fmtUSD(rPhrase[1]) : '（無）'), 32);
+  row('廣泛比對 Broad：', lastPlan.groups.broad.length + ' 組' + (rBroad ? '｜出價 ' + fmtUSD(rBroad[0]) + '–' + fmtUSD(rBroad[1]) : '（無）'), 32);
+  row('潛在否定關鍵字候選：', lastPlan.negatives.length + ' 組', 32);
+
+  y += 12;
+  ctx.textAlign = 'center';
+  ctx.font = '14px "Microsoft JhengHei", sans-serif';
+  ctx.fillStyle = '#9d97c2';
   ctx.fillText('產出日期：' + dateStr, W/2, y);
 
   ctx.font = '12px "Microsoft JhengHei", sans-serif';
