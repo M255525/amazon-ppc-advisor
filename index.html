@@ -657,7 +657,7 @@ function estimateSpecificity(text){
   if(len <= 9) return 3;
   return 4;
 }
-const NEGATIVE_SIGNAL_WORDS = /(免費|free\b|二手|used\b|中古|維修|repair\b|教學|tutorial|diy\b|租借|出租|rental\b|破解|盜版|山寨|仿冒|replica\b|fake\b)/i;
+const NEGATIVE_SIGNAL_WORDS = /(免費|^\s*free\b(?![- ](?:range|standing|size|form|style|weights?)\b)|\bfor\s+free\b|\bfree[- ](?:samples?|trials?|shipping|delivery|gifts?|downloads?|giveaway|coupons?)\b|二手|used\b|中古|維修|repair\b|教學|tutorial|diy\b|租借|出租|rental\b|破解|盜版|山寨|仿冒|replica\b|fake\b)/i;
 
 function classifyKeyword(kw){
   const spec = estimateSpecificity(kw.text);
